@@ -292,67 +292,11 @@ int getIncomingMessageSize(int client_sock){
 
 }
 
-void client_connected(int client_sock, struct sockaddr_in client_name) {
-
-	std::string ip = inet_ntoa(client_name.sin_addr);
-    int port = (int)ntohs(client_name.sin_port);
-	char buff[20] = { 0 };
-	itoa(port,buff,10);
-	std::string str_port(buff);
-    std::string mapkey = ip + ":" + str_port;
-
-    PrintMessage("client details : %s\n", mapkey.c_str());
-
-    PrintMessage("Inside Thread Function");
-
-    sendOk(client_sock);
-
-	while (1) {
-
-        int status;
-        char buff[24] = {0};
-        status = recv(client_sock,buff,sizeof(buff),0);
-        int datalength = atoi(buff);
-
-
-        PrintMessage("data length %d",datalength);
-
-        sendOk(client_sock);
-
-        char buff_command[512] = {0};
-        status = recv(client_sock,buff_command,datalength,0);
-        std::string data(buff_command);
-
-        //printf("-> data received %s\n",data.c_str());
-
-        PrintMessage("data received %s",data.c_str());
-
-        sendOk(client_sock);
-
-        //const char *chData = data.c_str();
-        std::vector<std::string>commands = parseCommand(data.c_str());
-
-        if (commands.size() > 0) {
-            if (commands[0] == "logout" || commands[0] == "LOGOUT") {
-                PrintMessage("\nLogging out client %s\n", mapkey.c_str());
-                closesocket(client_sock);
-                int s = shutdown(client_sock,2);
-                break;
-            }
-            if (commands[0] == "object" || commands[0] == "OBJECT") {
-                //printf("\n read object %s \n", commands[0].c_str());
-                PrintMessage(" read Object %s",commands[0].c_str());
-                receiveObject(client_sock);
-
-            }
-        }
-        else
-        {
-            PrintMessage("no command received");
-        }
-
-	}//END WHILE
-
+void client_connected(int client_sock, struct sockaddr_in client_name)
+{
+    struct client_record *pClient = new client();
+    pClient->clientHandler(client_sock,client_name);
+    delete pClient;
 }
 
 int main()
@@ -436,8 +380,8 @@ int main()
 		}
 		else
 		{
-			std::thread t1(client_connected, client_sock, client_name);
-			t1.detach();
+            		std::thread t1(client_connected, client_sock, client_name);
+            		t1.detach();
 
 		}
 
